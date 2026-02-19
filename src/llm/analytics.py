@@ -12,20 +12,6 @@ from src.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-SUFFICIENCY_PROMPT = """You are a relevance judge. Given a user query and some retrieved context chunks, decide whether the context contains information that directly answers or addresses the query.
-
-Say YES if the context contains a clear, direct answer to the query -- even if the answer is brief or the context also contains unrelated material.
-Say NO only if the context is about a different topic, a different time period, or genuinely does not address what the user is asking.
-
-User Query: {query}
-
-Retrieved Context:
-{context}
-
-Does the context contain information that answers the query?
-Reply with exactly one word: YES or NO."""
-
-
 ANALYTICS_PROMPT = """Analyze this user query and extract structured information.
 
 Query: {query}
@@ -44,17 +30,6 @@ class AnalyticsLLM(BaseLLM):
 
     def __init__(self, model: str | None = None, **kwargs):
         super().__init__(model=model or settings.analytics_model, **kwargs)
-
-    def check_sufficiency(self, query: str, context: list[str]) -> bool:
-        """Return True if *context* is sufficient to answer *query*."""
-        joined = "\n---\n".join(context) if context else "(no context)"
-        user_content = SUFFICIENCY_PROMPT.format(query=query, context=joined)
-        messages = [{"role": "user", "content": user_content}]
-        raw = self.complete(messages, temperature=0.0)
-        if not raw:
-            return False
-        answer = raw.strip().upper()
-        return answer.startswith("YES")
 
     def analyze_query(self, query: str) -> Dict[str, Any]:
         """Classify *query* and return a structured dict."""

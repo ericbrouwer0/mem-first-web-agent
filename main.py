@@ -36,7 +36,6 @@ def run_query(query: str, graph) -> None:
         "context": [],
         "metadata": [],
         "response": None,
-        "context_sufficient": None,
         "route_taken": "",
         "start_time": time.time(),
         "end_time": None,
@@ -48,13 +47,8 @@ def run_query(query: str, graph) -> None:
     similarity = result.get("best_similarity", 0.0)
     elapsed_ms = (result.get("end_time", time.time()) - initial_state["start_time"]) * 1000
 
-    route_labels = {
-        "memory_hit": "Memory Hit",
-        "memory_miss": "Memory Miss",
-        "memory_insufficient": "Memory Hit -> Context Insufficient -> Web Search",
-    }
-    label = route_labels.get(route, route)
-    print(f"Route: {label} (similarity: {similarity:.2f})")
+    print(f"Route: {'Memory Hit' if route == 'memory_hit' else 'Memory Miss'} "
+          f"(similarity: {similarity:.2f})")
     print(f"\nResponse:\n{result.get('response', '(no response)')}\n")
 
     sources = result.get("metadata", [])

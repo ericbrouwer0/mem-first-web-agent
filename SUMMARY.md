@@ -79,28 +79,21 @@ through a single base wrapper that works with any OpenAI-compatible API.
 - **state.py** -- `AgentState`, a `TypedDict` that carries all data between
   graph nodes: the query, its embedding, memory results, web results, chunks,
   context, response, route taken, and timing.
-- **nodes.py** -- Nine node / routing functions that each receive the full
-  state and return a partial update:
+- **nodes.py** -- Seven node functions that each receive the full state and
+  return a partial update:
   1. `embed_query_node` -- embed the user query.
   2. `vector_search_node` -- KNN search in Redis, decide hit or miss.
   3. `route_decision_node` -- conditional edge returning `"memory"` or
      `"web"`.
   4. `prepare_memory_context_node` -- build context from cached chunks.
-  5. `check_sufficiency_node` -- uses the analytics LLM to verify the
-     retrieved context actually answers the query.
-  6. `sufficiency_route` -- conditional edge: `"sufficient"` proceeds to
-     response generation; `"insufficient"` falls back to web search.
-  7. `web_search_node` -- call Tavily.
-  8. `store_web_results_node` -- chunk, embed, store, build context.
-  9. `generate_response_node` -- call the conversation LLM.
-  10. `log_interaction_node` -- record analytics and end time.
-- **graph.py** -- Wires nodes into a LangGraph `StateGraph` with two
-  conditional branches: one after `vector_search` (memory hit vs miss) and
-  one after `check_sufficiency` (context answers the question vs does not).
-  When cached context is found but deemed insufficient, the agent
-  automatically falls back to live web search rather than generating a
-  response from irrelevant context. All paths converge at
-  `generate_response`, then flow through `log_interaction` to `END`.
+  5. `web_search_node` -- call Tavily.
+  6. `store_web_results_node` -- chunk, embed, store, build context.
+  7. `generate_response_node` -- call the conversation LLM.
+  8. `log_interaction_node` -- record analytics and end time.
+- **graph.py** -- Wires nodes into a LangGraph `StateGraph` with a
+  conditional branch after `vector_search`. Memory-hit and memory-miss paths
+  converge at `generate_response`, then flow through `log_interaction` to
+  `END`.
 
 ### 7. CLI (`main.py`)
 

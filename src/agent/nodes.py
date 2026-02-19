@@ -111,24 +111,6 @@ def prepare_memory_context_node(state: AgentState) -> Dict[str, Any]:
     }
 
 
-def check_sufficiency_node(state: AgentState) -> Dict[str, Any]:
-    """Ask the analytics LLM whether the memory context answers the query."""
-    context = state.get("context", [])
-    query = state["query"]
-    for i, chunk in enumerate(context):
-        log.info("Sufficiency check context [%d]: %.120s...", i, chunk)
-    sufficient = _get_analytics_llm().check_sufficiency(query, context)
-    log.info("Context sufficiency check: %s", "sufficient" if sufficient else "insufficient")
-    return {"context_sufficient": sufficient}
-
-
-def sufficiency_route(state: AgentState) -> str:
-    """Conditional edge after sufficiency check."""
-    if state.get("context_sufficient"):
-        return "sufficient"
-    return "insufficient"
-
-
 def web_search_node(state: AgentState) -> Dict[str, Any]:
     """Run a Tavily search and store the results on state."""
     log.info("Memory miss -- falling back to Tavily search")
@@ -164,13 +146,11 @@ def store_web_results_node(state: AgentState) -> Dict[str, Any]:
         {"source_url": c["source_url"], "title": c["title"]}
         for c in all_chunks
     ]
-    # If we arrived here after a sufficiency failure, label accordingly
-    route = "memory_insufficient" if state.get("memory_hit") else "memory_miss"
     return {
         "chunks": all_chunks,
         "context": context,
         "metadata": metadata,
-        "route_taken": route,
+        "route_taken": "memory_miss",
     }
 
 

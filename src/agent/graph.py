@@ -3,39 +3,31 @@
 State flows:
 
   embed_query -> vector_search -> [route_decision]
-                                       |
-                             +---------+---------+
-                             |                   |
-                         (memory)              (web)
-                             |                   |
-                   prepare_memory_ctx      web_search
-                             |                   |
-                    [check_sufficiency]    store_web_results
-                        /          \             |
-                  sufficient   insufficient      |
-                       |              \          |
-                       |          web_search ----+
-                       |               |
-                       |        store_web_results
-                       |               |
-                       +---> generate_response
-                                   |
-                             log_interaction
-                                   |
-                                  END
+                                      |
+                            +---------+---------+
+                            |                   |
+                        (memory)              (web)
+                            |                   |
+                  prepare_memory_ctx     web_search
+                            |                   |
+                            |            store_web_results
+                            |                   |
+                            +----> generate_response
+                                        |
+                                  log_interaction
+                                        |
+                                       END
 """
 
 from langgraph.graph import END, StateGraph
 
 from src.agent.nodes import (
-    check_sufficiency_node,
     embed_query_node,
     generate_response_node,
     log_interaction_node,
     prepare_memory_context_node,
     route_decision_node,
     store_web_results_node,
-    sufficiency_route,
     vector_search_node,
     web_search_node,
 )
@@ -50,7 +42,6 @@ def build_graph() -> StateGraph:
     g.add_node("embed_query", embed_query_node)
     g.add_node("vector_search", vector_search_node)
     g.add_node("prepare_memory_ctx", prepare_memory_context_node)
-    g.add_node("check_sufficiency", check_sufficiency_node)
     g.add_node("web_search", web_search_node)
     g.add_node("store_web_results", store_web_results_node)
     g.add_node("generate_response", generate_response_node)
@@ -70,18 +61,10 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # Memory-hit path: prepare context, then verify it actually answers the query
-    g.add_edge("prepare_memory_ctx", "check_sufficiency")
-    g.add_conditional_edges(
-        "check_sufficiency",
-        sufficiency_route,
-        {
-            "sufficient": "generate_response",
-            "insufficient": "web_search",
-        },
-    )
+    # Memory-hit path
+    g.add_edge("prepare_memory_ctx", "generate_response")
 
-    # Web path (shared by initial miss and insufficiency fallback)
+    # Memory-miss path
     g.add_edge("web_search", "store_web_results")
     g.add_edge("store_web_results", "generate_response")
 

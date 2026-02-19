@@ -31,7 +31,10 @@ class AgentState(TypedDict, total=False):
     metadata: List[Dict[str, Any]]
     response: Optional[str]
 
+    # Sufficiency check
+    context_sufficient: Optional[bool]
+
     # Routing / observability
-    route_taken: str          # "memory_hit" | "memory_miss"
+    route_taken: str          # "memory_hit" | "memory_miss" | "memory_insufficient"
     start_time: float
     end_time: Optional[float]
